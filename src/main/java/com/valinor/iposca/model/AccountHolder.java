@@ -1,9 +1,9 @@
 package com.valinor.iposca.model;
 
 /**
- * Represents a customer account holder in the pharmacy.
- * Account holders can buy on credit, receive discounts, and get payment reminders.
- * Each field matches a column in the account_holders database table.
+ * Represents a customer account holder in the pharmacy
+ * Account holders can buy on credit, receive discounts and get payment reminders
+ * Each field matches a column in the account_holders database table
  */
 public class AccountHolder {
 
@@ -36,9 +36,9 @@ public class AccountHolder {
     }
 
     /**
-     * Checks if the customer can make purchases on credit.
-     * They can only buy on credit if their account is "normal" and
-     * adding the new amount wouldn't exceed their credit limit.
+     * Checks if the customer can make purchases on credit
+     * They can only buy on credit if their account is considered "normal" and
+     * adding the new amount wouldn't exceed their credit limit
      */
     public boolean canPurchaseOnCredit(double amount) {
         if (!"normal".equals(accountStatus)) {
@@ -48,8 +48,8 @@ public class AccountHolder {
     }
 
     /**
-     * Calculates the fixed discount amount for a given purchase total.
-     * Only applies if the discount type is "fixed".
+     * Calculates the fixed discount amount for a given purchase total
+     * Only applies if the discount type is "fixed"
      */
     public double calculateFixedDiscount(double purchaseTotal) {
         if ("fixed".equals(discountType)) {
@@ -59,8 +59,7 @@ public class AccountHolder {
     }
 
     /**
-     * Calculates the flexible discount rate based on total monthly spending.
-     * The brief says: 1% for under £1000, 2% for £1000-£2000, 3% for over £2000.
+     * Calculates the flexible discount rate based on total monthly spending
      */
     public double getFlexibleDiscountRate(double monthlyTotal) {
         if (!"flexible".equals(discountType)) {
@@ -75,7 +74,7 @@ public class AccountHolder {
         }
     }
 
-    // ==================== GETTERS AND SETTERS ====================
+    // Getter and Setter methods
 
     public int getAccountId() {
         return accountId;

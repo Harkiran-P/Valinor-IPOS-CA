@@ -9,9 +9,9 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * GUI panel for the IPOS-CA-CUST package.
+ * GUI panel for the IPOS-CA-CUST package
  * Lets the user manage customer account holders, record payments,
- * generate reminders and monthly statements.
+ * generate reminders and monthly statements
  */
 public class CustomerPanel extends JPanel {
 
@@ -39,7 +39,7 @@ public class CustomerPanel extends JPanel {
     }
 
     /**
-     * Creates the top section with title, search bar, and action buttons.
+     * Creates the top section with title, search bar and other action buttons
      */
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(10, 5));
@@ -71,7 +71,7 @@ public class CustomerPanel extends JPanel {
     }
 
     /**
-     * Creates the table that displays all account holders.
+     * Creates the account holder display table
      */
     private JScrollPane createTablePanel() {
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -95,7 +95,7 @@ public class CustomerPanel extends JPanel {
     private JPanel createButtonPanel() {
         JPanel outerPanel = new JPanel(new GridLayout(2, 1, 5, 5));
 
-        // Row 1: Account management buttons
+        // Account management buttons
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
 
         JButton addButton = new JButton("Add Customer");
@@ -120,7 +120,7 @@ public class CustomerPanel extends JPanel {
 
         outerPanel.add(row1);
 
-        // Row 2: Payment and reminder buttons
+        // Payment and reminder buttons
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
 
         JButton paymentButton = new JButton("Record Payment");

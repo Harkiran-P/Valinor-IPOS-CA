@@ -16,11 +16,11 @@ public class StockItem {
     private int availability;
     private int stockLimit;
 
-    // Empty constructor for when we create a blank item to fill in later
+    // Empty constructor for blank items
     public StockItem() {
     }
 
-    // Full constructor for when we have all the data at once
+    // Full constructor
     public StockItem(String itemId, String description, String packageType,
                      String unit, int unitsInPack, double bulkCost,
                      double markupRate, int availability, int stockLimit) {
@@ -37,7 +37,6 @@ public class StockItem {
 
     /**
      * Calculates the retail price by applying the markup to the bulk cost.
-     * For example: bulk cost £10, markup 50% = retail price £15.
      */
     public double getRetailPrice() {
         return bulkCost * (1 + markupRate / 100.0);
@@ -45,7 +44,6 @@ public class StockItem {
 
     /**
      * Calculates the retail price including VAT.
-     * vatRate is passed in as a percentage (e.g. 20 for 20%).
      */
     public double getRetailPriceWithVAT(double vatRate) {
         return getRetailPrice() * (1 + vatRate / 100.0);
@@ -58,7 +56,7 @@ public class StockItem {
         return availability < stockLimit;
     }
 
-    // ==================== GETTERS AND SETTERS ====================
+    // Getter and Setter methods
 
     public String getItemId() {
         return itemId;

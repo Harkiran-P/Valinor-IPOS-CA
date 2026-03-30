@@ -8,9 +8,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 /**
- * The main application window for IPOS-CA.
- * Uses tabs to organise the different packages (Stock, Sales, Customers, etc.).
- * More tabs will be added as we build the other packages.
+ * The main application window for IPOS-CA
+ * Uses tabs to organise the different packages (Stock, Sales, Customers, etc.)
+ * More tabs will be added as we build the other packages
  */
 public class MainFrame extends JFrame {
 
@@ -23,7 +23,7 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(900, 500));
         setLocationRelativeTo(null);
 
-        // Close the database connection properly when the window is closed
+        // Closes the database connection properly when the window is closed
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
