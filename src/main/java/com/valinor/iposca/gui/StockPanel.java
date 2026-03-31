@@ -9,9 +9,9 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * GUI panel for the IPOS-CA-Stock package
- * Lets the user view, add, edit, delete and search stock items
- * this handles delivery recording, low stock warnings and VAT and markup configuration
+ * GUI panel for the IPOS-CA-Stock package.
+ * Lets the user view, add, edit, delete, and search stock items.
+ * Also handles delivery recording, low stock warnings, VAT and markup configuration.
  */
 public class StockPanel extends JPanel {
 
@@ -21,7 +21,7 @@ public class StockPanel extends JPanel {
     private JTable stockTable;
     private DefaultTableModel tableModel;
 
-    // search bar
+    // Search bar at the top
     private JTextField searchField;
 
     // Column names for the stock table
@@ -35,25 +35,25 @@ public class StockPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // building each screen section
+        // Build each section of the screen
         add(createTopPanel(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
         add(createButtonPanel(), BorderLayout.SOUTH);
 
-        // loads stock data into the table
+        // Load stock data into the table
         refreshTable();
 
-        // Shows a low stock warning if any items are below their threshold
+        // Show low stock warning if any items are below their threshold
         showLowStockWarningIfNeeded();
     }
 
     /**
-     * Creates the section with the search bar and VAT config button at the top
+     * Creates the top section with the search bar and VAT config button.
      */
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(10, 5));
 
-        // Title
+        // Title label
         JLabel titleLabel = new JLabel("Stock Management");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         topPanel.add(titleLabel, BorderLayout.NORTH);
@@ -112,7 +112,7 @@ public class StockPanel extends JPanel {
     }
 
     /**
-     * Creates all the bottom buttons
+     * Creates the buttons at the bottom of the screen.
      */
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
@@ -218,7 +218,7 @@ public class StockPanel extends JPanel {
         JTextField availField = new JTextField(5);
         JTextField limitField = new JTextField(5);
 
-        // will arrange fields
+        // Arrange fields in a form layout
         JPanel formPanel = new JPanel(new GridLayout(9, 2, 5, 5));
         formPanel.add(new JLabel("Item ID (e.g. 100 00001):"));
         formPanel.add(idField);
@@ -244,7 +244,7 @@ public class StockPanel extends JPanel {
 
         if (result == JOptionPane.OK_OPTION) {
             try {
-                // Create the new stock item from the form
+                // Create the new stock item from the form inputs
                 StockItem item = new StockItem();
                 item.setItemId(idField.getText().trim());
                 item.setDescription(descField.getText().trim());
