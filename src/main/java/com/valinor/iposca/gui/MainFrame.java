@@ -1,6 +1,7 @@
 package com.valinor.iposca.gui;
 
 import com.valinor.iposca.db.DatabaseManager;
+import com.valinor.iposca.model.ApplicationUser;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,13 +11,13 @@ import java.awt.event.WindowEvent;
 /**
  * The main application window for IPOS-CA.
  * Uses tabs to organise the different packages (Stock, Sales, Customers, etc.).
- * More tabs will be added as we build the other packages.
+ * Which tabs are visible depends on the user's role.
  */
 public class MainFrame extends JFrame {
 
     private JTabbedPane tabbedPane;
 
-    public MainFrame() {
+    public MainFrame(ApplicationUser user) {
         setTitle("IPOS-CA - InfoPharma Client Application (Team 14 - Valinor)");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(1100, 700);
@@ -32,24 +33,54 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // Create the tabbed panel that holds all the different screens
+        JPanel mainPanel = new JPanel(new BorderLayout());
+
+        // Top bar showing current user and sign out button
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        JLabel userLabel = new JLabel("USER: " + user.getUsername() + "  |  ROLE: " + user.getRole());
+        userLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+
+        JButton signOutButton = new JButton("Sign Out");
+        signOutButton.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        signOutButton.addActionListener(e -> {
+            SignInFrame frame = new SignInFrame();
+            frame.setVisible(true);
+            this.dispose();
+        });
+
+        topPanel.add(userLabel, BorderLayout.WEST);
+        topPanel.add(signOutButton, BorderLayout.EAST);
+
+        // Create the tabbed panel that holds the different screens
         tabbedPane = new JTabbedPane();
 
-        // Add the Stock Management tab
-        tabbedPane.addTab("Stock Management", new StockPanel());
+        // Show tabs based on the user's role
+        if (user.getRole().equals("Admin")) {
+            tabbedPane.addTab("Users", new UserPanel());
+        } else {
+            tabbedPane.addTab("Stock Management", new StockPanel());
+            tabbedPane.addTab("Customers", new CustomerPanel());
+            tabbedPane.addTab("Sales", new SalesPanel());
+            tabbedPane.addTab("Orders (IPOS-SA)", createPlaceholderPanel("Orders module - coming soon"));
+            tabbedPane.addTab("Templates", createPlaceholderPanel("Template management - coming soon"));
 
-        // Add the Customer Management tab
-        tabbedPane.addTab("Customers", new CustomerPanel());
+            if (user.getRole().equals("Manager")) {
+                tabbedPane.addTab("Reports", createPlaceholderPanel("Report generation - coming soon"));
+            }
+        }
 
-        // Add the Sales tab
-        tabbedPane.addTab("Sales", new SalesPanel());
+        // Test role gives access to everything - remove before final demo
+        if (user.getRole().equals("Test")) {
+            tabbedPane.addTab("Reports", createPlaceholderPanel("Report generation - coming soon"));
+            tabbedPane.addTab("Users", new UserPanel());
+        }
 
-        // Placeholder tabs for future packages (will be built later)
-        tabbedPane.addTab("Orders (IPOS-SA)", createPlaceholderPanel("Orders module - coming soon"));
-        tabbedPane.addTab("Reports", createPlaceholderPanel("Report generation - coming soon"));
-        tabbedPane.addTab("Templates", createPlaceholderPanel("Template management - coming soon"));
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
-        add(tabbedPane);
+        add(mainPanel);
     }
 
     /**
