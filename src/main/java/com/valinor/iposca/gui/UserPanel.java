@@ -86,6 +86,38 @@ public class UserPanel extends JPanel{
     }
 
     /**
+     * Changes the role of the selected user.
+     */
+    private void changeSelectedUserRole() {
+        int selectedRow = userTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Select a user first.",
+                    "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int userId = (int) tableModel.getValueAt(selectedRow, 0);
+        String currentUsername = (String) tableModel.getValueAt(selectedRow, 1);
+        String currentRole = (String) tableModel.getValueAt(selectedRow, 3);
+
+        String[] roles = {"Pharmacist", "Manager", "Admin"};
+        String newRole = (String) JOptionPane.showInputDialog(this,
+                "Change role for '" + currentUsername + "'\nCurrent role: " + currentRole,
+                "Change Role", JOptionPane.PLAIN_MESSAGE, null, roles, currentRole);
+
+        if (newRole != null && !newRole.equals(currentRole)) {
+            if (userDAO.changeRole(userId, newRole)) {
+                JOptionPane.showMessageDialog(this,
+                        currentUsername + " is now a " + newRole + ".");
+                refreshTable();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to change role.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    /**
      * Creates buttons at the bottom of the screen.
      */
     private JPanel createButtonPanel() {
@@ -94,6 +126,10 @@ public class UserPanel extends JPanel{
         JButton addButton = new JButton("Add User");
         addButton.addActionListener(e -> showAddUserDialog());
         buttonPanel.add(addButton);
+
+        JButton changeRoleButton = new JButton("Change Role");
+        changeRoleButton.addActionListener(e -> changeSelectedUserRole());
+        buttonPanel.add(changeRoleButton);
 
         JButton deleteButton = new JButton("Delete User");
         deleteButton.addActionListener(e -> deleteSelectedUser());
