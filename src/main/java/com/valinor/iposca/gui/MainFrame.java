@@ -11,7 +11,7 @@ import java.awt.event.WindowEvent;
 /**
  * The main application window for IPOS-CA.
  * Uses tabs to organise the different packages (Stock, Sales, Customers, etc.).
- * More tabs will be added as we build the other packages.
+ * Which tabs are visible depends on the user's role.
  */
 public class MainFrame extends JFrame {
 
@@ -35,15 +35,15 @@ public class MainFrame extends JFrame {
 
         JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // Create panel to show current user and sign out button
+        // Top bar showing current user and sign out button
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        JLabel userLabel = new JLabel("USER:  " + user.getUsername());
+
+        JLabel userLabel = new JLabel("USER: " + user.getUsername() + "  |  ROLE: " + user.getRole());
         userLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+
         JButton signOutButton = new JButton("Sign Out");
         signOutButton.setFont(new Font("SansSerif", Font.PLAIN, 12));
-
-        // Sign out button closes main frame and re-opens the sign in frame
         signOutButton.addActionListener(e -> {
             SignInFrame frame = new SignInFrame();
             frame.setVisible(true);
@@ -53,32 +53,28 @@ public class MainFrame extends JFrame {
         topPanel.add(userLabel, BorderLayout.WEST);
         topPanel.add(signOutButton, BorderLayout.EAST);
 
-        // Create the tabbed panel that holds all the different screens
+        // Create the tabbed panel that holds the different screens
         tabbedPane = new JTabbedPane();
 
-        // Check user role to determine what tabs should be accessible
-        if(user.getRole().equals("Admin")){
-            tabbedPane.addTab("Users",new UserPanel());
-        }
-        else{
+        // Show tabs based on the user's role
+        if (user.getRole().equals("Admin")) {
+            tabbedPane.addTab("Users", new UserPanel());
+        } else {
             tabbedPane.addTab("Stock Management", new StockPanel());
             tabbedPane.addTab("Customers", new CustomerPanel());
+            tabbedPane.addTab("Sales", new SalesPanel());
             tabbedPane.addTab("Orders (IPOS-SA)", createPlaceholderPanel("Orders module - coming soon"));
-            tabbedPane.addTab("Sales", createPlaceholderPanel("Sales recording - coming soon"));
             tabbedPane.addTab("Templates", createPlaceholderPanel("Template management - coming soon"));
 
-            if(user.getRole().equals("Manager")){
+            if (user.getRole().equals("Manager")) {
                 tabbedPane.addTab("Reports", createPlaceholderPanel("Report generation - coming soon"));
             }
         }
 
-        /*
-          TESTING ROLE - REMOVE ON FINAL VERSION
-          Use to access all packages regardless of access level
-         */
-        if(user.getRole().equals("Test")){
+        // Test role gives access to everything - remove before final demo
+        if (user.getRole().equals("Test")) {
             tabbedPane.addTab("Reports", createPlaceholderPanel("Report generation - coming soon"));
-            tabbedPane.addTab("Users",new UserPanel());
+            tabbedPane.addTab("Users", new UserPanel());
         }
 
         mainPanel.add(topPanel, BorderLayout.NORTH);
