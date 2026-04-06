@@ -75,6 +75,27 @@ public class UserDAO {
     }
 
     /**
+     * Changes a user's role
+     */
+    public boolean changeRole(int userId, String newRole) {
+        String sql = "UPDATE users SET role = ? WHERE user_id = ?";
+
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, newRole);
+            pstmt.setInt(2, userId);
+            pstmt.executeUpdate();
+            pstmt.close();
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error changing role: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Gets a single user by their username.
      */
     public ApplicationUser getUserFromUsername(String username){
