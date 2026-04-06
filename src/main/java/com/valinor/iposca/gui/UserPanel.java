@@ -2,6 +2,7 @@ package com.valinor.iposca.gui;
 
 import com.valinor.iposca.dao.UserDAO;
 import com.valinor.iposca.model.ApplicationUser;
+import com.valinor.iposca.util.AppTheme;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -9,268 +10,185 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * GUI panel for the IPOS-CA-USER package.
- * Lets an admin manage user accounts.
+ * Admin panel for managing user accounts.
+ * Create users, change roles, remove users, search.
  */
-public class UserPanel extends JPanel{
+public class UserPanel extends JPanel {
+
     private UserDAO userDAO;
     private JTable userTable;
     private DefaultTableModel tableModel;
     private JTextField searchField;
 
-    private final String[] columnNames = {
-            "User ID", "Username", "Password", "Role", "Creation Date"
-    };
+    // password column hidden for security
+    private final String[] columns = {"User ID", "Username", "Role", "Created"};
 
     public UserPanel() {
         userDAO = new UserDAO();
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(0, 0));
+        setBackground(AppTheme.bg());
 
-        add(createTopPanel(), BorderLayout.NORTH);
-        add(createTablePanel(), BorderLayout.CENTER);
-        add(createButtonPanel(), BorderLayout.SOUTH);
+        add(AppTheme.headerBar("User Management"), BorderLayout.NORTH);
+
+        JPanel content = AppTheme.contentPanel();
+
+        // search bar
+        Object[] sb = AppTheme.searchBar(this::performSearch, this::refreshTable);
+        content.add((JPanel) sb[0], BorderLayout.NORTH);
+        searchField = (JTextField) sb[1];
+
+        // table
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) { return false; }
+        };
+        userTable = new JTable(tableModel);
+        userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        AppTheme.styleTable(userTable);
+
+        JScrollPane sp = new JScrollPane(userTable);
+        AppTheme.styleScrollPane(sp);
+        content.add(sp, BorderLayout.CENTER);
+
+        add(content, BorderLayout.CENTER);
+
+        // buttons
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
+        bar.setBackground(AppTheme.bg());
+        bar.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+        JButton addBtn = AppTheme.btn("Add User");
+        addBtn.addActionListener(e -> showAddUserDialog());
+        bar.add(addBtn);
+
+        JButton roleBtn = AppTheme.btn("Change Role");
+        roleBtn.addActionListener(e -> changeSelectedUserRole());
+        bar.add(roleBtn);
+
+        JButton delBtn = AppTheme.btn("Delete User");
+        delBtn.addActionListener(e -> deleteSelectedUser());
+        bar.add(delBtn);
+
+        JButton refBtn = AppTheme.btn("Refresh");
+        refBtn.addActionListener(e -> refreshTable());
+        bar.add(refBtn);
+
+        add(bar, BorderLayout.SOUTH);
 
         refreshTable();
     }
 
-    /**
-     * Creates the top section with title, search bar, and action buttons.
-     */
-    private JPanel createTopPanel() {
-        JPanel topPanel = new JPanel(new BorderLayout(10, 5));
-
-        JLabel titleLabel = new JLabel("User Account Management");
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        topPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Search section
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.add(new JLabel("Search:"));
-        searchField = new JTextField(20);
-        searchPanel.add(searchField);
-
-        JButton searchButton = new JButton("Search");
-        searchButton.addActionListener(e -> performSearch());
-        searchPanel.add(searchButton);
-
-        JButton clearButton = new JButton("Show All");
-        clearButton.addActionListener(e -> {
-            searchField.setText("");
-            refreshTable();
-        });
-        searchPanel.add(clearButton);
-
-        topPanel.add(searchPanel, BorderLayout.CENTER);
-
-        return topPanel;
-    }
-
-    /**
-     * Creates the table that displays all users.
-     */
-    private JScrollPane createTablePanel() {
-        tableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        userTable = new JTable(tableModel);
-        userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        userTable.setRowHeight(25);
-        userTable.getTableHeader().setReorderingAllowed(false);
-
-        return new JScrollPane(userTable);
-    }
-
-    /**
-     * Changes the role of the selected user.
-     */
-    private void changeSelectedUserRole() {
-        int selectedRow = userTable.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Select a user first.",
-                    "No Selection", JOptionPane.WARNING_MESSAGE);
-            return;
+    private void refreshTable() {
+        tableModel.setRowCount(0);
+        List<ApplicationUser> users = userDAO.getAllUsers();
+        for (ApplicationUser u : users) {
+            tableModel.addRow(new Object[]{
+                    u.getUserID(), u.getUsername(), u.getRole(), u.getCreatedAt()
+            });
         }
+    }
 
-        int userId = (int) tableModel.getValueAt(selectedRow, 0);
-        String currentUsername = (String) tableModel.getValueAt(selectedRow, 1);
-        String currentRole = (String) tableModel.getValueAt(selectedRow, 3);
+    private void performSearch() {
+        String kw = searchField.getText().trim();
+        if (kw.isEmpty()) { refreshTable(); return; }
+
+        tableModel.setRowCount(0);
+        List<ApplicationUser> users = userDAO.searchUsers(kw);
+        for (ApplicationUser u : users) {
+            tableModel.addRow(new Object[]{
+                    u.getUserID(), u.getUsername(), u.getRole(), u.getCreatedAt()
+            });
+        }
+        if (users.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No users found matching: " + kw);
+        }
+    }
+
+    private void showAddUserDialog() {
+        JTextField userF = new JTextField(15);
+        JPasswordField passF = new JPasswordField(15);
+        JComboBox<String> roleBox = new JComboBox<>(new String[]{"Pharmacist", "Manager", "Admin"});
+
+        JPanel f = new JPanel(new GridLayout(3, 2, 5, 5));
+        f.add(new JLabel("Username:*")); f.add(userF);
+        f.add(new JLabel("Password:*")); f.add(passF);
+        f.add(new JLabel("Role:"));      f.add(roleBox);
+
+        if (JOptionPane.showConfirmDialog(this, f, "Add New User",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+            String username = userF.getText().trim();
+            String password = new String(passF.getPassword());
+            String role = (String) roleBox.getSelectedItem();
+
+            if (username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Username and password are required.");
+                return;
+            }
+
+            ApplicationUser user = new ApplicationUser();
+            user.setUsername(username);
+            user.setPassword(password);
+            user.setRole(role);
+
+            int result = userDAO.createUser(user);
+            if (result > 0) {
+                JOptionPane.showMessageDialog(this, "User '" + username + "' created as " + role + ".");
+                refreshTable();
+            } else if (result == -1) {
+                JOptionPane.showMessageDialog(this, "Username already taken.", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to create user.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void changeSelectedUserRole() {
+        int r = userTable.getSelectedRow();
+        if (r == -1) { JOptionPane.showMessageDialog(this, "Select a user first."); return; }
+
+        int userId = (int) tableModel.getValueAt(r, 0);
+        String username = (String) tableModel.getValueAt(r, 1);
+        String currentRole = (String) tableModel.getValueAt(r, 2);
 
         String[] roles = {"Pharmacist", "Manager", "Admin"};
         String newRole = (String) JOptionPane.showInputDialog(this,
-                "Change role for '" + currentUsername + "'\nCurrent role: " + currentRole,
+                "Change role for '" + username + "'\nCurrent: " + currentRole,
                 "Change Role", JOptionPane.PLAIN_MESSAGE, null, roles, currentRole);
 
         if (newRole != null && !newRole.equals(currentRole)) {
             if (userDAO.changeRole(userId, newRole)) {
-                JOptionPane.showMessageDialog(this,
-                        currentUsername + " is now a " + newRole + ".");
+                JOptionPane.showMessageDialog(this, username + " is now a " + newRole + ".");
                 refreshTable();
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to change role.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    /**
-     * Creates buttons at the bottom of the screen.
-     */
-    private JPanel createButtonPanel() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
-
-        JButton addButton = new JButton("Add User");
-        addButton.addActionListener(e -> showAddUserDialog());
-        buttonPanel.add(addButton);
-
-        JButton changeRoleButton = new JButton("Change Role");
-        changeRoleButton.addActionListener(e -> changeSelectedUserRole());
-        buttonPanel.add(changeRoleButton);
-
-        JButton deleteButton = new JButton("Delete User");
-        deleteButton.addActionListener(e -> deleteSelectedUser());
-        buttonPanel.add(deleteButton);
-
-        return buttonPanel;
-    }
-
-    /**
-     * Reloads all user data from the database into the table.
-     */
-    private void refreshTable() {
-        tableModel.setRowCount(0);
-        List<ApplicationUser> users = userDAO.getAllUsers();
-
-        for (ApplicationUser user : users) {
-            addUserToTable(user);
-        }
-    }
-
-    /**
-     * Adds one user as a row in the table.
-     */
-    private void addUserToTable(ApplicationUser user) {
-        tableModel.addRow(new Object[]{
-                user.getUserID(),
-                user.getUsername(),
-                user.getPassword(),
-                user.getRole(),
-                user.getCreatedAt()
-        });
-    }
-
-    /**
-     * Searches users by the keyword in the search box.
-     */
-    private void performSearch() {
-        String keyword = searchField.getText().trim();
-        if (keyword.isEmpty()) {
-            refreshTable();
-            return;
-        }
-
-        tableModel.setRowCount(0);
-        List<ApplicationUser> users = userDAO.searchUsers(keyword);
-
-        for (ApplicationUser user : users) {
-            addUserToTable(user);
-        }
-
-        if (users.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No users found matching: " + keyword,
-                    "Search Results", JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-
-    /**
-     * Shows a dialog to create a new user.
-     */
-    private void showAddUserDialog() {
-        JTextField usernameField = new JTextField(15);
-        JTextField passwordField = new JTextField(20);
-
-        // Role type dropdown
-        JComboBox<String> roleTypeBox = new JComboBox<>(new String[]{"Pharmacist", "Manager", "Admin"});
-
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 5, 5));
-        formPanel.add(new JLabel("Username:*"));
-        formPanel.add(usernameField);
-        formPanel.add(new JLabel("Password:*"));
-        formPanel.add(passwordField);
-        formPanel.add(new JLabel("Role:"));
-        formPanel.add(roleTypeBox);
-
-        int result = JOptionPane.showConfirmDialog(this, formPanel,
-                "Add New User", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (result == JOptionPane.OK_OPTION) {
-            try {
-                String username = usernameField.getText().trim();
-                String password = passwordField.getText().trim();
-
-                if (username.isEmpty() || password.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Username and Password are required.",
-                            "Validation Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                ApplicationUser user = new ApplicationUser();
-                user.setUsername(username);
-                user.setPassword(password);
-                user.setRole((String) roleTypeBox.getSelectedItem());
-
-                int newId = userDAO.createUser(user);
-                if (newId > 0) {
-                    JOptionPane.showMessageDialog(this,
-                            "User created successfully. User ID: " + newId);
-                    refreshTable();
-                } else if(newId == -1){
-                    JOptionPane.showMessageDialog(this, "Username is taken.",
-                            "Validation Error", JOptionPane.ERROR_MESSAGE);
-                } else{
-                    JOptionPane.showMessageDialog(this, "Failed to create user.",
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this,
-                        "Failed to create user.",
-                        "Input Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    /**
-     * Deletes the selected user after confirmation.
-     */
     private void deleteSelectedUser() {
-        int selectedRow = userTable.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a user to delete.",
-                    "No Selection", JOptionPane.WARNING_MESSAGE);
-            return;
+        int r = userTable.getSelectedRow();
+        if (r == -1) { JOptionPane.showMessageDialog(this, "Select a user to delete."); return; }
+
+        int userId = (int) tableModel.getValueAt(r, 0);
+        String username = (String) tableModel.getValueAt(r, 1);
+        String role = (String) tableModel.getValueAt(r, 2);
+
+        // don't let them delete the last admin
+        if ("Admin".equals(role)) {
+            long adminCount = 0;
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                if ("Admin".equals(tableModel.getValueAt(i, 2))) adminCount++;
+            }
+            if (adminCount <= 1) {
+                JOptionPane.showMessageDialog(this, "Cannot delete the last Admin account.",
+                        "Protected", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
-        int userId = (int) tableModel.getValueAt(selectedRow, 0);
-        String username = (String) tableModel.getValueAt(selectedRow, 1);
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to delete user:\n" + username +
-                        " (User ID: " + userId + ")?",
-                "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-        if (confirm == JOptionPane.YES_OPTION) {
+        if (JOptionPane.showConfirmDialog(this, "Delete user '" + username + "'?",
+                "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
             if (userDAO.deleteUser(userId)) {
-                JOptionPane.showMessageDialog(this, "User deleted successfully.");
+                JOptionPane.showMessageDialog(this, "User deleted.");
                 refreshTable();
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to delete user.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

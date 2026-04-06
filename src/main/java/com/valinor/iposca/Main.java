@@ -1,34 +1,36 @@
 package com.valinor.iposca;
 
 import com.valinor.iposca.db.DatabaseManager;
-import com.valinor.iposca.gui.MainFrame;
 import com.valinor.iposca.gui.SignInFrame;
+import com.valinor.iposca.util.AppTheme;
 
 import javax.swing.*;
 
 /**
- * Entry point for the IPOS-CA application.
- * Sets up the database and launches the main window.
+ * Entry point for IPOS-CA.
+ * Sets up the database, applies the theme, and opens the sign in window.
  */
 public class Main {
 
     public static void main(String[] args) {
 
-        // Set the look and feel to match the operating system (Windows/Mac/Linux)
+        // cross-platform look and feel gives us full control over colours
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
-            // If it fails, just use the default Java look - not a big deal
-            System.err.println("Could not set system look and feel: " + e.getMessage());
+            System.err.println("Could not set look and feel: " + e.getMessage());
         }
 
-        // Create all database tables (does nothing if they already exist)
+        // apply theme colours to all swing components
+        AppTheme.applyGlobalDefaults();
+
+        // set up database tables (skips if they already exist)
         DatabaseManager.initialiseDatabase();
 
-        // Launch the GUI on the Event Dispatch Thread (required by Swing)
+        // open the sign in window
         SwingUtilities.invokeLater(() -> {
-            SignInFrame frame = new SignInFrame();
-            frame.setVisible(true);
+            SignInFrame signIn = new SignInFrame();
+            signIn.setVisible(true);
         });
     }
 }
