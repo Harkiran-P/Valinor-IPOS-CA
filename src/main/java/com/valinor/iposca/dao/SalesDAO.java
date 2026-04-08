@@ -3,6 +3,7 @@ package com.valinor.iposca.dao;
 import com.valinor.iposca.db.DatabaseManager;
 import com.valinor.iposca.model.Sale;
 import com.valinor.iposca.model.SaleItem;
+import com.valinor.iposca.dao.TemplateDAO;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class SalesDAO {
 
     private StockDAO stockDAO;
     private CustomerDAO customerDAO;
+    private final TemplateDAO templateDAO = new TemplateDAO();
 
     public SalesDAO() {
         this.stockDAO = new StockDAO();
@@ -245,12 +247,26 @@ public class SalesDAO {
         String pharmacyName = getMerchantDetail("pharmacy_name");
         String address = getMerchantDetail("address");
         String phone = getMerchantDetail("phone");
+        String email = getMerchantDetail("email");
+        String invoiceFooter = getMerchantDetail("invoice_footer");
+
+        // fallbacks
+        if (pharmacyName == null || pharmacyName.isBlank()) pharmacyName = "My Pharmacy";
+        if (address == null) address = "";
+        if (phone == null) phone = "";
+        if (email == null) email = "";
+        if (invoiceFooter == null || invoiceFooter.isBlank()) {
+            invoiceFooter = "Thank you for choosing Valinor.";
+        }
 
         StringBuilder receipt = new StringBuilder();
         receipt.append("============================================\n");
         receipt.append("              ").append(pharmacyName).append("\n");
         receipt.append("              ").append(address).append("\n");
         receipt.append("              Phone: ").append(phone).append("\n");
+        if (!email.isBlank()) {
+            receipt.append("              Email: ").append(email).append("\n");
+        }
         receipt.append("============================================\n");
         receipt.append("INVOICE / RECEIPT\n");
         receipt.append("Sale ID: ").append(sale.getSaleId()).append("\n");
@@ -293,7 +309,7 @@ public class SalesDAO {
             receipt.append("****").append(sale.getCardLastFour()).append("\n");
         }
 
-        receipt.append("\nThank you for your valued custom.\n");
+        receipt.append("\n").append(invoiceFooter).append("\n");
 
         return receipt.toString();
     }

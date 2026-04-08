@@ -141,6 +141,7 @@ public class MainFrame extends JFrame {
         if ("Test".equals(role)) {
             tabs.addTab("Reports", new ReportPanel());
             tabs.addTab("User Management", new UserPanel());
+            tabs.addTab("Templates", new TemplatePanel());
         }
 
         return tabs;
