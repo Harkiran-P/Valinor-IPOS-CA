@@ -176,3 +176,63 @@ INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES ('pharm
 INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES ('address', '123 High Street');
 INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES ('phone', '0208 000 0000');
 INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES ('email', 'info@mypharmacy.co.uk');
+
+
+INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES (
+                                                                             'first_reminder_template',
+                                                                             '========== 1ST REMINDER ==========
+                                                                         To: {customer_name}
+                                                                             {address}
+
+                                                                         Date: {today}
+
+                                                                         Dear {customer_name},
+
+                                                                         REMINDER - Account No: {account_id}
+                                                                         Outstanding Amount: £{balance}
+
+                                                                         According to our records, it appears that we have not yet received
+                                                                         payment for your outstanding balance.
+
+                                                                         We would appreciate payment by {due_date}.
+
+                                                                         If you have already sent a payment to us recently, please accept
+                                                                         our apologies.
+
+                                                                         Yours sincerely,
+                                                                         {pharmacy_name}
+                                                                         ==================================
+                                                                         '
+                                                                         );
+
+INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES (
+                                                                             'second_reminder_template',
+                                                                             '========= 2ND REMINDER ==========
+                                                                         To: {customer_name}
+                                                                             {address}
+
+                                                                         Date: {today}
+
+                                                                         Dear {customer_name},
+
+                                                                         SECOND REMINDER - Account No: {account_id}
+                                                                         Outstanding Amount: £{balance}
+
+                                                                         It appears that we still have not yet received payment for your
+                                                                         outstanding balance, despite the reminder previously sent to you.
+
+                                                                         We would appreciate it if you would settle this in full by {due_date}.
+
+                                                                         If you have already sent a payment to us recently, please accept
+                                                                         our apologies.
+
+                                                                         Yours sincerely,
+                                                                         {pharmacy_name}
+                                                                         ==================================
+                                                                         '
+                                                                         );
+
+INSERT OR IGNORE INTO merchant_details (detail_key, detail_value) VALUES (
+                                                                             'invoice_footer',
+                                                                             'Thank you for your valued custom.'
+                                                                         );
