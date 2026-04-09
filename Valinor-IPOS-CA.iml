@@ -10,5 +10,6 @@
     <orderEntry type="library" name="slf4j-api-2.0.9" level="project" />
     <orderEntry type="library" name="slf4j-simple-2.0.9" level="project" />
     <orderEntry type="library" name="sqlite-jdbc-3.45.1.0" level="project" />
+    <orderEntry type="library" name="mysql.connector.j" level="project" />
   </component>
 </module>
