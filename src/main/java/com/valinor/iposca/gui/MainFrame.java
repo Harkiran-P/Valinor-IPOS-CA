@@ -3,11 +3,14 @@ package com.valinor.iposca.gui;
 import com.valinor.iposca.db.DatabaseManager;
 import com.valinor.iposca.model.ApplicationUser;
 import com.valinor.iposca.util.AppTheme;
+import com.valinor.iposca.gui.SACataloguePanel;
+
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 
 /**
  * Main window. Has a nav bar at the top with user info,
@@ -130,7 +133,8 @@ public class MainFrame extends JFrame {
             tabs.addTab("Stock", new StockPanel());
             tabs.addTab("Customers", new CustomerPanel());
             tabs.addTab("Sales", new SalesPanel());
-            tabs.addTab("Orders (SA)", placeholder("Orders module - coming soon"));
+            tabs.addTab("SA Catalogue", new SACataloguePanel());
+            tabs.addTab("Orders (SA)", new SAOrdersPanel());
             tabs.addTab("Templates", placeholder("Template management - coming soon"));
 
             if ("Manager".equals(role)) {

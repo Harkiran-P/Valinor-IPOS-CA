@@ -191,6 +191,21 @@ public class DatabaseManager {
                 ")"
             );
 
+            // ==================== SA CATALOGUE CACHE TABLE ====================
+            stmt.execute(
+                    "CREATE TABLE IF NOT EXISTS sa_catalogue (" +
+                            "    item_id         TEXT    PRIMARY KEY," +
+                            "    description     TEXT    NOT NULL," +
+                            "    package_type    TEXT    NOT NULL," +
+                            "    unit            TEXT    NOT NULL," +
+                            "    units_per_pack  INTEGER NOT NULL," +
+                            "    cost_per_unit   REAL    NOT NULL," +
+                            "    availability    INTEGER NOT NULL DEFAULT 0," +
+                            "    last_synced     TEXT    NOT NULL DEFAULT (datetime('now'))" +
+                            ")"
+            );
+
+
             // ==================== MERCHANT DETAILS TABLE ====================
             stmt.execute(
                 "CREATE TABLE IF NOT EXISTS merchant_details (" +
