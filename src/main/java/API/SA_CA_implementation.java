@@ -9,7 +9,7 @@ public class SA_CA_implementation implements SA_CA_interface {
     // Database connection settings
     private static final String DB_URL  = "jdbc:mysql://localhost:3306/ipos_sa";
     private static final String DB_USER = "root";
-    private static final String DB_PASS = "1313";
+    private static final String DB_PASS = "1313Ipos!";
 
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
@@ -22,10 +22,10 @@ public class SA_CA_implementation implements SA_CA_interface {
             throw new IllegalArgumentException("Username and password must not be blank.");
         }
 
-        String sql = "SELECT u.id, u.username, u.full_name, u.role, m.merchant_id, m.account_status " +
-                "FROM users u " +
-                "LEFT JOIN merchants m ON u.username = m.username " +
-                "WHERE u.username = ? AND u.password = ? AND u.role = 'MERCHANT'";
+        String sql = "SELECT m.merchant_id, m.username, m.account_name, m.account_status " +
+                "FROM merchants m " +
+                "WHERE m.username = ? AND m.password = ?";
+
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -36,22 +36,21 @@ public class SA_CA_implementation implements SA_CA_interface {
 
             if (rs.next()) {
                 Map<String, String> result = new LinkedHashMap<>();
-                result.put("userId",        String.valueOf(rs.getInt("id")));
-                result.put("username",      rs.getString("username"));
-                result.put("fullName",      rs.getString("full_name"));
-                result.put("merchantId",    rs.getString("merchant_id"));
-                result.put("accountStatus", rs.getString("account_status"));
-                return result;
+                    result.put("username",      rs.getString("username"));
+                    result.put("fullName",      rs.getString("account_name"));
+                    result.put("merchantId",    rs.getString("merchant_id"));
+                    result.put("accountStatus", rs.getString("account_status"));
+                    return result;
+                }
             }
-        }
         return null;
     }
 
 
     @Override
     public List<Map<String, String>> getCatalogueItems() throws Exception {
-        String sql = "SELECT item_id, description, package_type, unit, units_per_pack, " +
-                "cost_per_unit, availability " +
+        String sql = "SELECT item_id, description, package_type, unit, units_in_pack, " +
+                "unit_cost, availability " +
                 "FROM catalogue_items WHERE availability > 0 ORDER BY item_id";
         return executeCatalogueQuery(sql, null);
     }
@@ -61,8 +60,8 @@ public class SA_CA_implementation implements SA_CA_interface {
         if (keyword == null || keyword.isBlank()) {
             throw new IllegalArgumentException("Search keyword must not be blank.");
         }
-        String sql = "SELECT item_id, description, package_type, unit, units_per_pack, " +
-                "cost_per_unit, availability " +
+        String sql = "SELECT item_id, description, package_type, unit, units_in_pack, " +
+                "unit_cost, availability " +
                 "FROM catalogue_items WHERE availability > 0 " +
                 "AND (LOWER(item_id) LIKE ? OR LOWER(description) LIKE ?) ORDER BY item_id";
         return executeCatalogueQuery(sql, "%" + keyword.toLowerCase() + "%");
@@ -81,8 +80,8 @@ public class SA_CA_implementation implements SA_CA_interface {
                 item.put("description",  rs.getString("description"));
                 item.put("packageType",  rs.getString("package_type"));
                 item.put("unit",         rs.getString("unit"));
-                item.put("unitsPerPack", String.valueOf(rs.getInt("units_per_pack")));
-                item.put("costPerUnit",  String.format("%.2f", rs.getDouble("cost_per_unit")));
+                item.put("unitsPerPack", String.valueOf(rs.getInt("units_in_pack")));
+                item.put("costPerUnit",  String.format("%.2f", rs.getDouble("unit_cost")));
                 item.put("availability", String.valueOf(rs.getInt("availability")));
                 results.add(item);
             }
@@ -148,7 +147,7 @@ public class SA_CA_implementation implements SA_CA_interface {
                     }
 
                     PreparedStatement iSt = conn.prepareStatement(
-                            "SELECT description, cost_per_unit, availability " +
+                            "SELECT description, unit_cost, availability " +
                                     "FROM catalogue_items WHERE item_id = ?");
                     iSt.setString(1, itemId);
                     ResultSet iRs = iSt.executeQuery();
@@ -159,7 +158,7 @@ public class SA_CA_implementation implements SA_CA_interface {
                     }
 
                     String desc  = iRs.getString("description");
-                    double unit  = iRs.getDouble("cost_per_unit");
+                    double unit  = iRs.getDouble("unit_cost");
                     int avail    = iRs.getInt("availability");
 
                     if (qty > avail) {
@@ -183,8 +182,8 @@ public class SA_CA_implementation implements SA_CA_interface {
                 // 5. Insert order
                 PreparedStatement oSt = conn.prepareStatement(
                         "INSERT INTO orders (merchant_id, order_date, order_status, " +
-                                "total_amount, discount_amount, net_amount, payment_due_date) " +
-                                "VALUES (?, NOW(), 'accepted', ?, ?, ?, DATE_ADD(LAST_DAY(NOW()), INTERVAL 1 DAY))",
+                                "total_amount, discount_amount, net_amount) " +
+                                "VALUES (?, NOW(), 'accepted', ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS);
                 oSt.setString(1, merchantId);
                 oSt.setDouble(2, orderTotal);

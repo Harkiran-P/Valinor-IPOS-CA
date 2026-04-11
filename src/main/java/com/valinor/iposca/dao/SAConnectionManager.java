@@ -30,7 +30,9 @@ public class SAConnectionManager {
      */
     public boolean login(String username, String password) {
         try {
+            System.out.println("Attempting SA login with: [" + username + "] [" + password + "]");
             Map<String, String> result = saApi.authenticateMerchant(username, password);
+            System.out.println("SA login result: " + result);
             if (result != null) {
                 this.merchantId = result.get("merchantId");
                 this.accountStatus = result.get("accountStatus");
@@ -39,10 +41,12 @@ public class SAConnectionManager {
             }
         } catch (Exception e) {
             System.err.println("SA login failed: " + e.getMessage());
+            e.printStackTrace();
         }
         this.loggedIn = false;
         return false;
     }
+
 
     /**
      * Fetches the full catalogue from SA and converts it to our model objects.
@@ -172,6 +176,8 @@ public class SAConnectionManager {
             return null;
         }
     }
+
+
 
     public boolean isLoggedIn() { return loggedIn; }
     public String getMerchantId() { return merchantId; }
