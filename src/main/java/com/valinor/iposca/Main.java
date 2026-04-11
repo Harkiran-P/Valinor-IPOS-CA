@@ -10,6 +10,7 @@ import javax.swing.*;
  * Entry point for IPOS-CA.
  * Sets up the database, applies the theme, and opens the sign in window.
  */
+
 public class Main {
 
     public static void main(String[] args) {
