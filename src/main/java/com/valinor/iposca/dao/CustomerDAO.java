@@ -95,24 +95,130 @@ public class CustomerDAO {
     }
 
     /**
-     * Deletes an account holder from the database.
+     * Changes a customer's account ID.
+     * Updates all related records (sales, sale_items, payments) to match.
      */
-    public boolean deleteAccountHolder(int accountId) {
-        String sql = "DELETE FROM account_holders WHERE account_id = ?";
-
+    public boolean changeAccountId(int oldId, int newId) {
         try {
             Connection conn = DatabaseManager.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, accountId);
-            pstmt.executeUpdate();
-            pstmt.close();
-            return true;
+            conn.setAutoCommit(false);
+
+            try {
+                PreparedStatement check = conn.prepareStatement(
+                        "SELECT account_id FROM account_holders WHERE account_id = ?");
+                check.setInt(1, newId);
+                ResultSet rs = check.executeQuery();
+                if (rs.next()) {
+                    rs.close();
+                    check.close();
+                    conn.rollback();
+                    return false;
+                }
+                rs.close();
+                check.close();
+
+                conn.createStatement().execute("PRAGMA foreign_keys = OFF");
+
+                PreparedStatement p1 = conn.prepareStatement(
+                        "UPDATE account_holders SET account_id = ? WHERE account_id = ?");
+                p1.setInt(1, newId);
+                p1.setInt(2, oldId);
+                p1.executeUpdate();
+                p1.close();
+
+                PreparedStatement p2 = conn.prepareStatement(
+                        "UPDATE sales SET account_id = ? WHERE account_id = ?");
+                p2.setInt(1, newId);
+                p2.setInt(2, oldId);
+                p2.executeUpdate();
+                p2.close();
+
+                PreparedStatement p3 = conn.prepareStatement(
+                        "UPDATE payments_received SET account_id = ? WHERE account_id = ?");
+                p3.setInt(1, newId);
+                p3.setInt(2, oldId);
+                p3.executeUpdate();
+                p3.close();
+
+                conn.createStatement().execute("PRAGMA foreign_keys = ON");
+
+                conn.commit();
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback();
+                conn.createStatement().execute("PRAGMA foreign_keys = ON");
+                System.err.println("Error changing account ID: " + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
 
         } catch (SQLException e) {
-            System.err.println("Error deleting account holder: " + e.getMessage());
+            System.err.println("Error with database connection: " + e.getMessage());
             return false;
         }
     }
+
+
+
+
+    /**
+     * Deletes an account holder and all their related records from the database.
+     * Removes sale items, sales, and payments linked to this account first.
+     */
+    public boolean deleteAccountHolder(int accountId) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
+
+            try {
+                // Delete sale_items for all sales belonging to this account
+                PreparedStatement pstmt1 = conn.prepareStatement(
+                        "DELETE FROM sale_items WHERE sale_id IN " +
+                                "(SELECT sale_id FROM sales WHERE account_id = ?)");
+                pstmt1.setInt(1, accountId);
+                pstmt1.executeUpdate();
+                pstmt1.close();
+
+                // Delete sales for this account
+                PreparedStatement pstmt2 = conn.prepareStatement(
+                        "DELETE FROM sales WHERE account_id = ?");
+                pstmt2.setInt(1, accountId);
+                pstmt2.executeUpdate();
+                pstmt2.close();
+
+                // Delete payments for this account
+                PreparedStatement pstmt3 = conn.prepareStatement(
+                        "DELETE FROM payments_received WHERE account_id = ?");
+                pstmt3.setInt(1, accountId);
+                pstmt3.executeUpdate();
+                pstmt3.close();
+
+                // Delete the account holder
+                PreparedStatement pstmt4 = conn.prepareStatement(
+                        "DELETE FROM account_holders WHERE account_id = ?");
+                pstmt4.setInt(1, accountId);
+                pstmt4.executeUpdate();
+                pstmt4.close();
+
+                conn.commit();
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("Error deleting account holder: " + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error with database connection: " + e.getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * Gets a single account holder by their ID.

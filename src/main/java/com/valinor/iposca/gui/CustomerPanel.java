@@ -223,7 +223,8 @@ public class CustomerPanel extends JPanel {
         AccountHolder h = customerDAO.getAccountHolderById(id);
         if (h == null) { JOptionPane.showMessageDialog(this, "Customer not found."); return; }
 
-        JTextField firstF = new JTextField(h.getFirstName(), 15),
+        JTextField accIdF = new JTextField("" + h.getAccountId(), 10),
+                firstF = new JTextField(h.getFirstName(), 15),
                 lastF = new JTextField(h.getLastName(), 15),
                 addrF = new JTextField(h.getAddress() != null ? h.getAddress() : "", 20),
                 phoneF = new JTextField(h.getPhone() != null ? h.getPhone() : "", 15),
@@ -238,12 +239,13 @@ public class CustomerPanel extends JPanel {
             if (!"fixed".equals(discBox.getSelectedItem())) rateF.setText("0.0");
         });
 
-        JPanel f = new JPanel(new GridLayout(8, 2, 5, 5));
-        f.add(new JLabel("First Name:")); f.add(firstF);
-        f.add(new JLabel("Last Name:"));  f.add(lastF);
-        f.add(new JLabel("Address:"));    f.add(addrF);
-        f.add(new JLabel("Phone:"));      f.add(phoneF);
-        f.add(new JLabel("Email:"));      f.add(emailF);
+        JPanel f = new JPanel(new GridLayout(9, 2, 5, 5));
+        f.add(new JLabel("Account ID:"));    f.add(accIdF);
+        f.add(new JLabel("First Name:"));    f.add(firstF);
+        f.add(new JLabel("Last Name:"));     f.add(lastF);
+        f.add(new JLabel("Address:"));       f.add(addrF);
+        f.add(new JLabel("Phone:"));         f.add(phoneF);
+        f.add(new JLabel("Email:"));         f.add(emailF);
         f.add(new JLabel("Credit Limit (£):")); f.add(creditF);
         f.add(new JLabel("Discount Type:"));     f.add(discBox);
         f.add(new JLabel("Discount Rate (%):"));  f.add(rateF);
@@ -251,6 +253,19 @@ public class CustomerPanel extends JPanel {
         if (JOptionPane.showConfirmDialog(this, f, "Edit: " + h.getFullName(),
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             try {
+                // Check if account ID was changed
+                int newId = Integer.parseInt(accIdF.getText().trim());
+                if (newId != id) {
+                    if (!customerDAO.changeAccountId(id, newId)) {
+                        JOptionPane.showMessageDialog(this,
+                                "Failed to change Account ID. It may already be in use.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    h = customerDAO.getAccountHolderById(newId);
+                    if (h == null) return;
+                }
+
                 h.setFirstName(firstF.getText().trim());
                 h.setLastName(lastF.getText().trim());
                 h.setAddress(addrF.getText().trim());
@@ -269,6 +284,7 @@ public class CustomerPanel extends JPanel {
             }
         }
     }
+
 
     private void deleteSelectedCustomer() {
         int r = customerTable.getSelectedRow();
