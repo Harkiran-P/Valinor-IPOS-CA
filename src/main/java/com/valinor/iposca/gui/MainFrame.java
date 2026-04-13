@@ -124,6 +124,8 @@ public class MainFrame extends JFrame {
         tabs.setFont(AppTheme.SUBTITLE);
         tabs.setBackground(AppTheme.bg());
         tabs.setForeground(AppTheme.text());
+        tabs.addTab("Order Emails", new EmailPanel());
+
 
         String role = currentUser.getRole();
 
