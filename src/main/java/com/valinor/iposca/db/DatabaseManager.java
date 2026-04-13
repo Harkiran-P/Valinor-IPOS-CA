@@ -191,6 +191,20 @@ public class DatabaseManager {
                 ")"
             );
 
+            // ==================== DISCOUNT TIERS TABLE ====================
+            stmt.execute(
+                    "CREATE TABLE IF NOT EXISTS discount_tiers (" +
+                            "    tier_id     INTEGER PRIMARY KEY AUTOINCREMENT," +
+                            "    account_id  INTEGER NOT NULL," +
+                            "    min_value   REAL    NOT NULL," +
+                            "    max_value   REAL," +
+                            "    discount_rate REAL  NOT NULL," +
+                            "    FOREIGN KEY (account_id) REFERENCES account_holders(account_id)" +
+                            ")"
+            );
+
+
+
             // ==================== SA CATALOGUE CACHE TABLE ====================
             stmt.execute(
                     "CREATE TABLE IF NOT EXISTS sa_catalogue (" +
