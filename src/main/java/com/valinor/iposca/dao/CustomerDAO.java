@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Types;
+
 
 /**
  * Handles all database operations for customer account holders.
@@ -95,24 +97,229 @@ public class CustomerDAO {
     }
 
     /**
-     * Deletes an account holder from the database.
+     * Changes a customer's account ID.
+     * Updates all related records (sales, sale_items, payments) to match.
      */
-    public boolean deleteAccountHolder(int accountId) {
-        String sql = "DELETE FROM account_holders WHERE account_id = ?";
+    public boolean changeAccountId(int oldId, int newId) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
+
+            try {
+                PreparedStatement check = conn.prepareStatement(
+                        "SELECT account_id FROM account_holders WHERE account_id = ?");
+                check.setInt(1, newId);
+                ResultSet rs = check.executeQuery();
+                if (rs.next()) {
+                    rs.close();
+                    check.close();
+                    conn.rollback();
+                    return false;
+                }
+                rs.close();
+                check.close();
+
+                conn.createStatement().execute("PRAGMA foreign_keys = OFF");
+
+                PreparedStatement p1 = conn.prepareStatement(
+                        "UPDATE account_holders SET account_id = ? WHERE account_id = ?");
+                p1.setInt(1, newId);
+                p1.setInt(2, oldId);
+                p1.executeUpdate();
+                p1.close();
+
+                PreparedStatement p2 = conn.prepareStatement(
+                        "UPDATE sales SET account_id = ? WHERE account_id = ?");
+                p2.setInt(1, newId);
+                p2.setInt(2, oldId);
+                p2.executeUpdate();
+                p2.close();
+
+                PreparedStatement p3 = conn.prepareStatement(
+                        "UPDATE payments_received SET account_id = ? WHERE account_id = ?");
+                p3.setInt(1, newId);
+                p3.setInt(2, oldId);
+                p3.executeUpdate();
+                p3.close();
+
+                conn.createStatement().execute("PRAGMA foreign_keys = ON");
+
+                conn.commit();
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback();
+                conn.createStatement().execute("PRAGMA foreign_keys = ON");
+                System.err.println("Error changing account ID: " + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error with database connection: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Saves variable discount tiers for an account.
+     * Deletes existing tiers first, then inserts the new ones.
+     */
+    public boolean saveDiscountTiers(int accountId, List<double[]> tiers) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
+
+            try {
+                PreparedStatement del = conn.prepareStatement(
+                        "DELETE FROM discount_tiers WHERE account_id = ?");
+                del.setInt(1, accountId);
+                del.executeUpdate();
+                del.close();
+
+                PreparedStatement ins = conn.prepareStatement(
+                        "INSERT INTO discount_tiers (account_id, min_value, max_value, discount_rate) " +
+                                "VALUES (?, ?, ?, ?)");
+
+                for (double[] tier : tiers) {
+                    ins.setInt(1, accountId);
+                    ins.setDouble(2, tier[0]);
+                    if (tier[1] < 0) {
+                        ins.setNull(3, Types.REAL);
+                    } else {
+                        ins.setDouble(3, tier[1]);
+                    }
+                    ins.setDouble(4, tier[2]);
+                    ins.executeUpdate();
+                }
+                ins.close();
+
+                conn.commit();
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("Error saving discount tiers: " + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error with database connection: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets discount tiers for an account.
+     * Returns list of {minValue, maxValue, discountRate}. maxValue = -1 means unlimited.
+     */
+    public List<double[]> getDiscountTiers(int accountId) {
+        List<double[]> tiers = new ArrayList<>();
+        String sql = "SELECT min_value, max_value, discount_rate FROM discount_tiers " +
+                "WHERE account_id = ? ORDER BY min_value";
 
         try {
             Connection conn = DatabaseManager.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, accountId);
-            pstmt.executeUpdate();
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                double max = rs.getDouble("max_value");
+                if (rs.wasNull()) max = -1;
+                tiers.add(new double[]{
+                        rs.getDouble("min_value"), max, rs.getDouble("discount_rate")
+                });
+            }
+            rs.close();
             pstmt.close();
-            return true;
 
         } catch (SQLException e) {
-            System.err.println("Error deleting account holder: " + e.getMessage());
+            System.err.println("Error getting discount tiers: " + e.getMessage());
+        }
+
+        return tiers;
+    }
+
+    /**
+     * Calculates the variable discount rate for a given subtotal.
+     * Looks up which tier the subtotal falls into.
+     */
+    public double getVariableDiscountRate(int accountId, double subtotal) {
+        List<double[]> tiers = getDiscountTiers(accountId);
+        for (double[] tier : tiers) {
+            double min = tier[0];
+            double max = tier[1];
+            if (subtotal >= min && (max < 0 || subtotal <= max)) {
+                return tier[2];
+            }
+        }
+        return 0.0;
+    }
+
+
+
+
+
+    /**
+     * Deletes an account holder and all their related records from the database.
+     * Removes sale items, sales, and payments linked to this account first.
+     */
+    public boolean deleteAccountHolder(int accountId) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
+
+            try {
+                // Delete sale_items for all sales belonging to this account
+                PreparedStatement pstmt1 = conn.prepareStatement(
+                        "DELETE FROM sale_items WHERE sale_id IN " +
+                                "(SELECT sale_id FROM sales WHERE account_id = ?)");
+                pstmt1.setInt(1, accountId);
+                pstmt1.executeUpdate();
+                pstmt1.close();
+
+                // Delete sales for this account
+                PreparedStatement pstmt2 = conn.prepareStatement(
+                        "DELETE FROM sales WHERE account_id = ?");
+                pstmt2.setInt(1, accountId);
+                pstmt2.executeUpdate();
+                pstmt2.close();
+
+                // Delete payments for this account
+                PreparedStatement pstmt3 = conn.prepareStatement(
+                        "DELETE FROM payments_received WHERE account_id = ?");
+                pstmt3.setInt(1, accountId);
+                pstmt3.executeUpdate();
+                pstmt3.close();
+
+                // Delete the account holder
+                PreparedStatement pstmt4 = conn.prepareStatement(
+                        "DELETE FROM account_holders WHERE account_id = ?");
+                pstmt4.setInt(1, accountId);
+                pstmt4.executeUpdate();
+                pstmt4.close();
+
+                conn.commit();
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("Error deleting account holder: " + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error with database connection: " + e.getMessage());
             return false;
         }
     }
+
 
     /**
      * Gets a single account holder by their ID.

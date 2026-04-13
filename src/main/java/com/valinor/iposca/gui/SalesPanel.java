@@ -278,7 +278,11 @@ public class SalesPanel extends JPanel {
         double discPct = 0;
         if (customerTypeBox.getSelectedIndex() == 1 && accountHolderBox.getSelectedItem() != null) {
             AccountHolder h = (AccountHolder) accountHolderBox.getSelectedItem();
-            if ("fixed".equals(h.getDiscountType())) discPct = h.getDiscountRate();
+            if ("fixed".equals(h.getDiscountType())) {
+                discPct = h.getDiscountRate();
+            } else if ("flexible".equals(h.getDiscountType())) {
+                discPct = customerDAO.getVariableDiscountRate(h.getAccountId(), sub);
+            }
         }
 
         double disc = sub * (discPct / 100.0);
@@ -306,7 +310,14 @@ public class SalesPanel extends JPanel {
         double sub = 0;
         for (SaleItem item : cartItems) sub += item.getLineTotal();
 
-        double discPct = (holder != null && "fixed".equals(holder.getDiscountType())) ? holder.getDiscountRate() : 0;
+        double discPct = 0;
+        if (holder != null) {
+            if ("fixed".equals(holder.getDiscountType())) {
+                discPct = holder.getDiscountRate();
+            } else if ("flexible".equals(holder.getDiscountType())) {
+                discPct = customerDAO.getVariableDiscountRate(holder.getAccountId(), sub);
+            }
+        }
         double disc = sub * (discPct / 100.0);
         double afterDisc = sub - disc;
         double vatAmt = afterDisc * (vat / 100.0);
