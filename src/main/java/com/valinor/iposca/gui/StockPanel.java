@@ -22,8 +22,8 @@ public class StockPanel extends JPanel {
     private JTextField searchField;
 
     private final String[] columns = {
-            "Item ID", "Description", "Pkg Type", "Unit", "Units/Pack",
-            "Bulk Cost (£)", "Markup %", "Retail (£)", "Availability", "Stock Limit", "Status"
+            "Item ID", "Description", "Package Type", "Unit", "Units in Pack",
+            "Package Cost (£)", "Markup %", "Retail (£)", "Availability", "Stock Limit", "Status"
     };
 
     public StockPanel() {

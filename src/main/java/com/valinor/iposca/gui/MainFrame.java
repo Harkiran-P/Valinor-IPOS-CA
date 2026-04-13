@@ -135,16 +135,14 @@ public class MainFrame extends JFrame {
             tabs.addTab("Sales", new SalesPanel());
             tabs.addTab("SA Catalogue", new SACataloguePanel());
             tabs.addTab("Orders (SA)", new SAOrdersPanel());
-            tabs.addTab("Templates", placeholder("Template management - coming soon"));
-
+            tabs.addTab("Templates", new TemplatePanel());
             if ("Manager".equals(role)) {
-                tabs.addTab("Reports", placeholder("Report generation - coming soon"));
-            }
+                tabs.addTab("Reports", new ReportPanel());            }
         }
 
         // test role shows everything - remove before demo
         if ("Test".equals(role)) {
-            tabs.addTab("Reports", placeholder("Report generation - coming soon"));
+            tabs.addTab("Reports", new ReportPanel());
             tabs.addTab("User Management", new UserPanel());
         }
 
