@@ -8,6 +8,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import java.util.ArrayList;
+
 
 /**
  * Customer account management screen.
@@ -234,12 +236,21 @@ public class CustomerPanel extends JPanel {
         JComboBox<String> discBox = new JComboBox<>(new String[]{"none", "fixed", "flexible"});
         discBox.setSelectedItem(h.getDiscountType());
         rateF.setEnabled("fixed".equals(h.getDiscountType()));
+
+        JButton tiersBtn = AppTheme.btn("Edit Tiers...");
+        tiersBtn.setEnabled("flexible".equals(h.getDiscountType()));
+
         discBox.addActionListener(e -> {
-            rateF.setEnabled("fixed".equals(discBox.getSelectedItem()));
-            if (!"fixed".equals(discBox.getSelectedItem())) rateF.setText("0.0");
+            String sel = (String) discBox.getSelectedItem();
+            rateF.setEnabled("fixed".equals(sel));
+            tiersBtn.setEnabled("flexible".equals(sel));
+            if (!"fixed".equals(sel)) rateF.setText("0.0");
         });
 
-        JPanel f = new JPanel(new GridLayout(9, 2, 5, 5));
+        final int[] currentId = {id};
+        tiersBtn.addActionListener(e -> showEditTiersDialog(currentId[0]));
+
+        JPanel f = new JPanel(new GridLayout(10, 2, 5, 5));
         f.add(new JLabel("Account ID:"));    f.add(accIdF);
         f.add(new JLabel("First Name:"));    f.add(firstF);
         f.add(new JLabel("Last Name:"));     f.add(lastF);
@@ -248,12 +259,12 @@ public class CustomerPanel extends JPanel {
         f.add(new JLabel("Email:"));         f.add(emailF);
         f.add(new JLabel("Credit Limit (£):")); f.add(creditF);
         f.add(new JLabel("Discount Type:"));     f.add(discBox);
-        f.add(new JLabel("Discount Rate (%):"));  f.add(rateF);
+        f.add(new JLabel("Fixed Rate (%):"));    f.add(rateF);
+        f.add(new JLabel("Variable Tiers:"));    f.add(tiersBtn);
 
         if (JOptionPane.showConfirmDialog(this, f, "Edit: " + h.getFullName(),
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             try {
-                // Check if account ID was changed
                 int newId = Integer.parseInt(accIdF.getText().trim());
                 if (newId != id) {
                     if (!customerDAO.changeAccountId(id, newId)) {
@@ -284,6 +295,89 @@ public class CustomerPanel extends JPanel {
             }
         }
     }
+
+    private void showEditTiersDialog(int accountId) {
+        List<double[]> existing = customerDAO.getDiscountTiers(accountId);
+
+        DefaultTableModel tierModel = new DefaultTableModel(
+                new String[]{"Min Value (£)", "Max Value (£)", "Discount %"}, 0);
+
+        for (double[] tier : existing) {
+            tierModel.addRow(new Object[]{
+                    String.format("%.2f", tier[0]),
+                    tier[1] < 0 ? "No limit" : String.format("%.2f", tier[1]),
+                    String.format("%.1f", tier[2])
+            });
+        }
+
+        JTable tierTable = new JTable(tierModel);
+        AppTheme.styleTable(tierTable);
+
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JScrollPane sp = new JScrollPane(tierTable);
+        sp.setPreferredSize(new Dimension(400, 150));
+        AppTheme.styleScrollPane(sp);
+        panel.add(sp, BorderLayout.CENTER);
+
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        btns.setBackground(AppTheme.bg());
+
+        JButton addBtn = AppTheme.btn("Add Tier");
+        addBtn.addActionListener(e -> {
+            JTextField minF = new JTextField(10), maxF = new JTextField(10), rateF = new JTextField(5);
+            JPanel addPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+            addPanel.add(new JLabel("Min Value (£):"));  addPanel.add(minF);
+            addPanel.add(new JLabel("Max Value (£) [blank = no limit]:"));  addPanel.add(maxF);
+            addPanel.add(new JLabel("Discount Rate (%):"));  addPanel.add(rateF);
+
+            if (JOptionPane.showConfirmDialog(panel, addPanel, "Add Tier",
+                    JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                try {
+                    String minStr = minF.getText().trim();
+                    String maxStr = maxF.getText().trim();
+                    String rateStr = rateF.getText().trim();
+                    tierModel.addRow(new Object[]{
+                            String.format("%.2f", Double.parseDouble(minStr)),
+                            maxStr.isEmpty() ? "No limit" : String.format("%.2f", Double.parseDouble(maxStr)),
+                            String.format("%.1f", Double.parseDouble(rateStr))
+                    });
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(panel, "Enter valid numbers.");
+                }
+            }
+        });
+        btns.add(addBtn);
+
+        JButton rmBtn = AppTheme.btn("Remove Selected");
+        rmBtn.addActionListener(e -> {
+            int row = tierTable.getSelectedRow();
+            if (row >= 0) tierModel.removeRow(row);
+        });
+        btns.add(rmBtn);
+
+        panel.add(btns, BorderLayout.SOUTH);
+
+        if (JOptionPane.showConfirmDialog(this, panel, "Variable Discount Tiers",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+
+            List<double[]> tiers = new ArrayList<>();
+            for (int i = 0; i < tierModel.getRowCount(); i++) {
+                double min = Double.parseDouble(tierModel.getValueAt(i, 0).toString().replace(",", ""));
+                String maxStr = tierModel.getValueAt(i, 1).toString();
+                double max = "No limit".equals(maxStr) ? -1 : Double.parseDouble(maxStr.replace(",", ""));
+                double rate = Double.parseDouble(tierModel.getValueAt(i, 2).toString().replace("%", ""));
+                tiers.add(new double[]{min, max, rate});
+            }
+
+            if (customerDAO.saveDiscountTiers(accountId, tiers)) {
+                JOptionPane.showMessageDialog(this, "Tiers saved.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to save tiers.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+
 
 
     private void deleteSelectedCustomer() {

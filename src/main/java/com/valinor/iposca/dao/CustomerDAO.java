@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Types;
+
 
 /**
  * Handles all database operations for customer account holders.
@@ -159,6 +161,105 @@ public class CustomerDAO {
             return false;
         }
     }
+
+    /**
+     * Saves variable discount tiers for an account.
+     * Deletes existing tiers first, then inserts the new ones.
+     */
+    public boolean saveDiscountTiers(int accountId, List<double[]> tiers) {
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            conn.setAutoCommit(false);
+
+            try {
+                PreparedStatement del = conn.prepareStatement(
+                        "DELETE FROM discount_tiers WHERE account_id = ?");
+                del.setInt(1, accountId);
+                del.executeUpdate();
+                del.close();
+
+                PreparedStatement ins = conn.prepareStatement(
+                        "INSERT INTO discount_tiers (account_id, min_value, max_value, discount_rate) " +
+                                "VALUES (?, ?, ?, ?)");
+
+                for (double[] tier : tiers) {
+                    ins.setInt(1, accountId);
+                    ins.setDouble(2, tier[0]);
+                    if (tier[1] < 0) {
+                        ins.setNull(3, Types.REAL);
+                    } else {
+                        ins.setDouble(3, tier[1]);
+                    }
+                    ins.setDouble(4, tier[2]);
+                    ins.executeUpdate();
+                }
+                ins.close();
+
+                conn.commit();
+                return true;
+
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("Error saving discount tiers: " + e.getMessage());
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error with database connection: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets discount tiers for an account.
+     * Returns list of {minValue, maxValue, discountRate}. maxValue = -1 means unlimited.
+     */
+    public List<double[]> getDiscountTiers(int accountId) {
+        List<double[]> tiers = new ArrayList<>();
+        String sql = "SELECT min_value, max_value, discount_rate FROM discount_tiers " +
+                "WHERE account_id = ? ORDER BY min_value";
+
+        try {
+            Connection conn = DatabaseManager.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, accountId);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                double max = rs.getDouble("max_value");
+                if (rs.wasNull()) max = -1;
+                tiers.add(new double[]{
+                        rs.getDouble("min_value"), max, rs.getDouble("discount_rate")
+                });
+            }
+            rs.close();
+            pstmt.close();
+
+        } catch (SQLException e) {
+            System.err.println("Error getting discount tiers: " + e.getMessage());
+        }
+
+        return tiers;
+    }
+
+    /**
+     * Calculates the variable discount rate for a given subtotal.
+     * Looks up which tier the subtotal falls into.
+     */
+    public double getVariableDiscountRate(int accountId, double subtotal) {
+        List<double[]> tiers = getDiscountTiers(accountId);
+        for (double[] tier : tiers) {
+            double min = tier[0];
+            double max = tier[1];
+            if (subtotal >= min && (max < 0 || subtotal <= max)) {
+                return tier[2];
+            }
+        }
+        return 0.0;
+    }
+
 
 
 
