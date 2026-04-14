@@ -36,14 +36,10 @@ public class SACataloguePanel extends JPanel {
 
         JPanel content = AppTheme.contentPanel();
 
-        // search bar + sync button
+        // search bar
         Object[] sb = AppTheme.searchBar(this::performSearch, this::refreshTable);
         JPanel searchPanel = (JPanel) sb[0];
         searchField = (JTextField) sb[1];
-
-        JButton syncBtn = AppTheme.primaryBtn("Sync Catalogue from SA");
-        syncBtn.addActionListener(e -> syncCatalogue());
-        searchPanel.add(syncBtn);
 
         content.add(searchPanel, BorderLayout.NORTH);
 
@@ -67,9 +63,9 @@ public class SACataloguePanel extends JPanel {
         bar.setBackground(AppTheme.bg());
         bar.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
-        JButton refreshBtn = AppTheme.btn("Refresh");
-        refreshBtn.addActionListener(e -> refreshTable());
-        bar.add(refreshBtn);
+        JButton syncBtn = AppTheme.primaryBtn("Sync Catalogue from SA");
+        syncBtn.addActionListener(e -> syncCatalogue());
+        bar.add(syncBtn);
 
         add(bar, BorderLayout.SOUTH);
 
