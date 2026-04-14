@@ -10,10 +10,10 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
-/**
- * Browse and sync the InfoPharma (SA) product catalogue.
- * No login required — catalogue is publicly available.
- */
+
+ //Browse and sync the InfoPharma (SA) product catalogue.
+ //No login required — catalogue is publicly available.
+
 public class SACataloguePanel extends JPanel {
 
     private final SACatalogueDAO catalogueDAO;
