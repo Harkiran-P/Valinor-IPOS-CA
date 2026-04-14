@@ -3,6 +3,8 @@ package com.valinor.iposca;
 import com.valinor.iposca.db.DatabaseManager;
 import com.valinor.iposca.gui.SignInFrame;
 import com.valinor.iposca.util.AppTheme;
+import API.CatalogueServer;
+
 
 import javax.swing.*;
 
@@ -27,6 +29,14 @@ public class Main {
 
         // set up database tables (skips if they already exist)
         DatabaseManager.initialiseDatabase();
+
+        try {
+            CatalogueServer catalogueServer = new CatalogueServer();
+            catalogueServer.start();
+        } catch (Exception e) {
+            System.err.println("Could not start catalogue server: " + e.getMessage());
+        }
+
 
         // open the sign in window
         SwingUtilities.invokeLater(() -> {
