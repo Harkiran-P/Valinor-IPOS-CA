@@ -10,10 +10,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
-/**
- * Stock management screen. View, add, edit, delete stock items.
- * Record deliveries, set markup/VAT, view low stock report.
- */
+// Stock management screen. View, add, edit, delete stock items.
 public class StockPanel extends JPanel {
 
     private StockDAO stockDAO;
@@ -31,7 +28,7 @@ public class StockPanel extends JPanel {
         setLayout(new BorderLayout(0, 0));
         setBackground(AppTheme.bg());
 
-        add(AppTheme.headerBar("Stock Management"), BorderLayout.NORTH);
+        add(AppTheme.headerBar("Local Stock"), BorderLayout.NORTH);
 
         // content area: search + table
         JPanel content = AppTheme.contentPanel();
@@ -124,8 +121,7 @@ public class StockPanel extends JPanel {
         showLowStockWarningIfNeeded();
     }
 
-    // ==================== DATA ====================
-
+    // data
     private void refreshTable() {
         tableModel.setRowCount(0);
         double vat = stockDAO.getVATRate();
@@ -166,8 +162,7 @@ public class StockPanel extends JPanel {
         }
     }
 
-    // ==================== DIALOGS ====================
-
+    // dialogs
     private void showAddItemDialog() {
         JTextField idF = new JTextField(15), descF = new JTextField(15),
                 pkgF = new JTextField(10), unitF = new JTextField(10),
